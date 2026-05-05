@@ -52,6 +52,9 @@ export type LogoutInput = {
 };
 // ─── API Responses  ────────────────────────────────────────────────────────
 export type RegisterResponse = AuthResult;
+export type LoginResponse = AuthResult;
+export type RefreshResponse = TokenPair;
+export type GetMeResponse = { user: PublicUser };
 
 // ─── JWT payload types ────────────────────────────────────────────────────────
 
@@ -78,7 +81,7 @@ export type PublicUser = Omit<User, "passwordHash">;
 // ─── Repository types ────────────────────────────────────────────────────
 
 export type IUserRepository = {
-  // findById(id: string): Promise<User | null>;
+  findById(id: string): Promise<User | null>;
   findByEmail(email: string): Promise<User | null>;
   create(data: CreateUserData): Promise<User>;
   // updateById(id: string, data: Partial<User>): Promise<User>;

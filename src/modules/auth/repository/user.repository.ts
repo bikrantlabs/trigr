@@ -1,19 +1,50 @@
 import { getPool } from "src/shared/db";
 import { CreateUserData, IUserRepository, User } from "../auth.types";
+import { DbUser } from "src/shared/db.types";
 
 export const userRepository: IUserRepository = {
   async findByEmail(email: string): Promise<User | null> {
     const pool = getPool();
-    const { rows } = await pool.query<User>(
+    const { rows } = await pool.query<DbUser>(
       "SELECT * FROM users WHERE email = $1",
       [email],
     );
-    return rows[0] ?? null;
+    if (!rows[0]) {
+      return null;
+    }
+    return {
+      id: rows[0].id,
+      createdAt: new Date(rows[0].created_at),
+      email: rows[0].email,
+      isActive: rows[0].is_active,
+      isEmailVerified: rows[0].is_email_verified,
+      passwordHash: rows[0].password_hash,
+      updatedAt: new Date(rows[0].password_hash),
+    };
+  },
+  async findById(id: string): Promise<User | null> {
+    const pool = getPool();
+    const { rows } = await pool.query<DbUser>(
+      "SELECT * FROM users WHERE id = $1",
+      [id],
+    );
+    if (!rows[0]) {
+      return null;
+    }
+    return {
+      id: rows[0].id,
+      createdAt: new Date(rows[0].created_at),
+      email: rows[0].email,
+      isActive: rows[0].is_active,
+      isEmailVerified: rows[0].is_email_verified,
+      passwordHash: rows[0].password_hash,
+      updatedAt: new Date(rows[0].password_hash),
+    };
   },
   create: async (data: CreateUserData): Promise<User> => {
     const pool = getPool();
-    const { rows } = await pool.query<User>(
-      "INSERT INTO users(email, passwordHash) VALUES($1, $2) RETURNING *",
+    const { rows } = await pool.query<DbUser>(
+      "INSERT INTO users(email, password_hash) VALUES($1, $2) RETURNING *",
       [data.email, data.passwordHash],
     );
 
@@ -21,6 +52,14 @@ export const userRepository: IUserRepository = {
       throw new Error("Failed to create error");
     }
 
-    return rows[0];
+    return {
+      id: rows[0].id,
+      createdAt: new Date(rows[0].created_at),
+      email: rows[0].email,
+      isActive: rows[0].is_active,
+      isEmailVerified: rows[0].is_email_verified,
+      passwordHash: rows[0].password_hash,
+      updatedAt: new Date(rows[0].password_hash),
+    };
   },
 };

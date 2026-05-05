@@ -22,6 +22,8 @@ const envSchema = z.object({
   ACCESS_TOKEN_EXPIRY: z.string().default("15m"),
   REFRESH_TOKEN_EXPIRY: z.string().default("7d"),
 
+  REFRESH_TOKEN_COOKIE_KEY: z.string().default("refresh_token"),
+
   // Rate limiting
   RATE_LIMIT_WINDOW_MS: z.coerce.number().default(15 * 60 * 1000), // 15 min
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().default(100),

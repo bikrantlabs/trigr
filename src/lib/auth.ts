@@ -23,9 +23,13 @@ export const signAccessToken = (data: {
     (() => {
       throw new Error("ACCESS_TOKEN_SECRET missing");
     })();
-  return jwt.sign({ sub: data.userId, email: data.email }, ACCESS_TOKEN_SECRET, {
-    expiresIn: "15m",
-    algorithm: "HS256",
-    issuer: "trigr",
-  });
+  return jwt.sign(
+    { sub: data.userId, email: data.email },
+    ACCESS_TOKEN_SECRET,
+    {
+      expiresIn: "15m",
+      algorithm: "HS256",
+      issuer: "trigr",
+    },
+  );
 };

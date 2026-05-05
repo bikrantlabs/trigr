@@ -1,45 +1,36 @@
 /* eslint-env node */
 module.exports = {
-  extends: [
-    /**
-     * Here I simply want to disable all rules. I feel like a pretty strict
-     * tsconfig already catches a lot of the recommended rules and I want to
-     * avoid any mental overhead of unnecessary "duplicated warnings/errors".
-     * If you want to go with the "default/recommended" version, simply
-     * uncomment the following lines in the extends array.
-     */
-    // "eslint:recommended",
-    // "plugin:@typescript-eslint/recommended",
-    // "plugin:@typescript-eslint/recommended-requiring-type-checking",
-    /* This prettier extends is used to disable all the formatting rules that
-     * are enabled by the different "recommended" rules.
-     */
-    // "prettier",
-  ],
+  extends: [],
   plugins: ["@typescript-eslint"],
   parser: "@typescript-eslint/parser",
+  ignorePatterns: [
+    "bundle/**",
+    "dist/**",
+    "node_modules/**",
+    ".yarn/**",
+    "migrations/**",
+    "TODO/**",
+    "**/*.js", // ignore plain JS files
+    "**/*.cjs", // ignore the eslint config itself
+    "**/*.mjs",
+  ],
   parserOptions: {
-    project: true,
+    project: "./tsconfig.eslint.json",
     tsconfigRootDir: __dirname,
   },
-  /**
-   * You can use the rules inside this overrides to specify the rules you want
-   * to use on a one by one / case by case basis. If you simply want to go with
-   * the default, just remove or uncomment the whole "rules" section inside the
-   * "overrides" property and you are done.
-   *
-   * The following rules are my personal preference and reflect a subset of the
-   * recommended options. They also include a lot of the more strict options NOT
-   * included in the recommended ones. My goal is to simplify having a
-   * consistent code base/code style, to avoid catchable bugs early and advocate
-   * for usage of newer features of the language.
-   **/
+
   overrides: [
     {
       // Enables type checking for typescript files.
       // Src for the overrides from here :
       // https://github.com/typescript-eslint/typescript-eslint/blob/main/packages/eslint-plugin/src/configs/eslint-recommended.ts
       files: ["*.ts", "*.tsx", "*.mts", "*.cts"],
+      parser: "@typescript-eslint/parser",
+      // Move parserOptions INTO the override, so it only applies to TS files
+      parserOptions: {
+        project: "./tsconfig.eslint.json",
+        tsconfigRootDir: __dirname,
+      },
       rules: {
         // "eslint" rules
         // check https://eslint.org/docs/latest/rules/ for reference
