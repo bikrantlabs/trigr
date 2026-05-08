@@ -80,7 +80,7 @@ export type PublicUser = Omit<User, "passwordHash">;
 
 // ─── Repository types ────────────────────────────────────────────────────
 
-export type IUserRepository = {
+export type UserRepository = {
   findById(id: string): Promise<User | null>;
   findByEmail(email: string): Promise<User | null>;
   create(data: CreateUserData): Promise<User>;
@@ -88,12 +88,13 @@ export type IUserRepository = {
   // deleteById(id: string): Promise<void>;
 };
 
-export type ITokenRepository = {
-  create(data: CreateTokenData): Promise<RefreshToken>;
+export type TokenRepository = {
+  create(data: CreateTokenData): Promise<void>;
   findById(id: string): Promise<RefreshToken | null>;
   revokeById(id: string): Promise<void>;
   revokeAllForUser(userId: string): Promise<void>;
-  deleteExpired(): Promise<number>; // Returns count of deleted tokens
+  delete(id: string): Promise<void>;
+  deleteExpired(): Promise<void>; // Returns count of deleted tokens
 };
 
 // ─── Repository data types ────────────────────────────────────────────────────
@@ -120,4 +121,28 @@ export type OAuthProfile = {
   email: string;
   name: string;
   avatarUrl?: string;
+};
+
+// ─── Services ────────────────────────────────────────────────────────────
+
+export type TokenService = {
+  generateAccessToken(userId: string, email: string): string;
+  generateRefreshToken(userId: string): { token: string; jti: string };
+  verifyAccessToken(token: string): AccessTokenPayload;
+  verifyRefreshTokenSignature(token: string): RefreshTokenPayload;
+  persistRefreshToken(data: {
+    jti: string;
+    userId: string;
+    rawToken: string;
+    meta: { ipAddress: string | null; userAgent: string | null };
+  }): Promise<void>;
+  validateRefreshToken(rawToken: string): Promise<RefreshTokenPayload>;
+  rotateRefreshToken(data: {
+    oldJti: string;
+    userId: string;
+    email: string;
+    meta: { userAgent: string | null; ipAddress: string | null };
+  }): Promise<TokenPair>;
+  revokeToken(jti: string): Promise<void>;
+  revokeAllUserTokens(userId: string): Promise<void>;
 };

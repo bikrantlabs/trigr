@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { ApiResponse } from "src/shared/api-response";
-import { authService } from "./services/auth.service";
 import {
   GetMeResponse,
   LoginInput,
@@ -15,10 +14,14 @@ import { getRequestMetadata } from "src/shared/utils/get-request-metadata";
 import { UnauthorizedError } from "src/shared/errors/app-error";
 import { config } from "src/shared/config/config";
 import { parseExpiryToMs } from "src/shared/utils/date";
+import { authService } from "./container";
 
 export const authController = {
-  async register(req: Request, res: Response<ApiResponse<RegisterResponse>>) {
-    const body = req.body as RegisterInput;
+  async register(
+    req: Request<object, object, RegisterInput>,
+    res: Response<ApiResponse<RegisterResponse>>,
+  ) {
+    const body = req.body;
 
     const result = await authService.register(body, getRequestMetadata(req));
 

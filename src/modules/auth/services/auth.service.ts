@@ -1,13 +1,14 @@
 import { createLogger } from "src/shared/logger";
 import {
   AuthResult,
+  UserRepository,
   LoginInput,
   PublicUser,
   RegisterInput,
   TokenPair,
   User,
+  TokenService,
 } from "../auth.types";
-import { userRepository } from "../repository/user.repository";
 import {
   ConflictError,
   InvalidCredentialsError,
@@ -15,7 +16,6 @@ import {
   UnauthorizedError,
 } from "src/shared/errors/app-error";
 import { hashPassword, verifyPassword } from "../utils/hash-password";
-import { tokenService } from "./token.service";
 
 const logger = createLogger("Auth Service");
 
@@ -30,139 +30,148 @@ function toPublicUser(user: User): PublicUser {
   };
 }
 
-export const authService = {
-  async register(
-    data: RegisterInput,
-    meta: { ipAddress: string | null; userAgent: string | null },
-  ): Promise<AuthResult> {
-    const existing = await userRepository.findByEmail(data.email);
-    if (existing) {
-      throw new ConflictError("An account with this email already exists.");
-    }
+export const createAuthService = (deps: {
+  userRepository: UserRepository;
+  tokenService: TokenService;
+}) => {
+  const { userRepository, tokenService } = deps;
 
-    // Hash password
-    const passwordHash = await hashPassword(data.password);
+  const service = {
+    async register(
+      data: RegisterInput,
+      meta: { ipAddress: string | null; userAgent: string | null },
+    ): Promise<AuthResult> {
+      const existing = await userRepository.findByEmail(data.email);
+      if (existing) {
+        throw new ConflictError("An account with this email already exists.");
+      }
 
-    const user = await userRepository.create({
-      email: data.email,
-      passwordHash,
-    });
+      // Hash password
+      const passwordHash = await hashPassword(data.password);
 
-    // Generate tokens
-    const accessToken = tokenService.generateAccessToken(user.id, user.email);
+      const user = await userRepository.create({
+        email: data.email,
+        passwordHash,
+      });
 
-    const { token: refreshToken, jti } = tokenService.generateRefreshToken(
-      user.id,
-    );
+      // Generate tokens
+      const accessToken = tokenService.generateAccessToken(user.id, user.email);
 
-    await tokenService.persistRefreshToken({
-      jti,
-      rawToken: refreshToken,
-      userId: user.id,
-      meta,
-    });
-
-    logger.info({ userId: user.id }, "User registered");
-
-    return {
-      user: toPublicUser(user),
-      tokens: { accessToken, refreshToken },
-    };
-  },
-
-  async login(
-    data: LoginInput,
-    meta: { userAgent: string | null; ipAddress: string | null },
-  ): Promise<AuthResult> {
-    const { email, password } = data;
-    const user = await userRepository.findByEmail(email);
-
-    // Verify password
-    // Dummy hash to prevent against timing attacks
-    const dummyHash =
-      "$2b$12$dummy.hash.to.prevent.timing.attacks.from.revealing.existence";
-    const match = await verifyPassword(
-      password,
-      user?.passwordHash ?? dummyHash,
-    );
-
-    if (!user || !match) {
-      throw new InvalidCredentialsError();
-    }
-
-    if (!user.isActive) {
-      throw new InvalidCredentialsError();
-    }
-
-    // Generate tokens:
-    const accessToken = tokenService.generateAccessToken(user.id, user.email);
-
-    const { token: refreshToken, jti } = tokenService.generateRefreshToken(
-      user.id,
-    );
-
-    await tokenService.persistRefreshToken({
-      jti,
-      rawToken: refreshToken,
-      userId: user.id,
-      meta,
-    });
-
-    logger.info({ userId: user.id }, "User Logged in");
-
-    return {
-      user: toPublicUser(user),
-      tokens: { accessToken, refreshToken },
-    };
-  },
-
-  /**
-   * Refresh tokens
-   */
-  async refresh(
-    rawRefreshToken: string,
-    meta: { userAgent: string | null; ipAddress: string | null },
-  ): Promise<TokenPair> {
-    const payload = await tokenService.validateRefreshToken(rawRefreshToken);
-
-    const user = await userRepository.findById(payload.sub);
-    if (!user || !user.isActive) {
-      throw new UnauthorizedError();
-    }
-
-    const tokens = await tokenService.rotateRefreshToken({
-      email: user.email,
-      meta,
-      oldJti: payload.jti,
-      userId: user.id,
-    });
-
-    logger.info({ userId: user.id }, "Token Refreshed");
-
-    return tokens;
-  },
-
-  async logout(rawRefreshToken: string): Promise<void> {
-    try {
-      const payload = tokenService.verifyRefreshTokenSignature(rawRefreshToken);
-      await tokenService.revokeToken(payload.jti);
-      logger.info({ userId: payload.sub }, "User logged out");
-    } catch {
-      // If token is already invalid/expired, treat logout as success
-      logger.debug(
-        "Logout called with invalid/expired token — treating as success",
+      const { token: refreshToken, jti } = tokenService.generateRefreshToken(
+        user.id,
       );
-    }
-  },
 
-  /**
-   * Get current user profile from access token.
-   */
-  async getMe(userId: string): Promise<PublicUser> {
-    const user = await userRepository.findById(userId);
-    if (!user) {
-      throw new NotFoundError("User");
-    }
-    return toPublicUser(user);
-  },
+      await tokenService.persistRefreshToken({
+        jti,
+        rawToken: refreshToken,
+        userId: user.id,
+        meta,
+      });
+
+      logger.info({ userId: user.id }, "User registered");
+
+      return {
+        user: toPublicUser(user),
+        tokens: { accessToken, refreshToken },
+      };
+    },
+    async login(
+      data: LoginInput,
+      meta: { userAgent: string | null; ipAddress: string | null },
+    ): Promise<AuthResult> {
+      const { email, password } = data;
+      const user = await userRepository.findByEmail(email);
+
+      // Verify password
+      // Dummy hash to prevent against timing attacks
+      const dummyHash =
+        "$2b$12$dummy.hash.to.prevent.timing.attacks.from.revealing.existence";
+      const match = await verifyPassword(
+        password,
+        user?.passwordHash ?? dummyHash,
+      );
+
+      if (!user || !match) {
+        throw new InvalidCredentialsError();
+      }
+
+      if (!user.isActive) {
+        throw new InvalidCredentialsError();
+      }
+
+      // Generate tokens:
+      const accessToken = tokenService.generateAccessToken(user.id, user.email);
+
+      const { token: refreshToken, jti } = tokenService.generateRefreshToken(
+        user.id,
+      );
+
+      await tokenService.persistRefreshToken({
+        jti,
+        rawToken: refreshToken,
+        userId: user.id,
+        meta,
+      });
+
+      logger.info({ userId: user.id }, "User Logged in");
+
+      return {
+        user: toPublicUser(user),
+        tokens: { accessToken, refreshToken },
+      };
+    },
+
+    /**
+     * Refresh tokens
+     */
+    async refresh(
+      rawRefreshToken: string,
+      meta: { userAgent: string | null; ipAddress: string | null },
+    ): Promise<TokenPair> {
+      const payload = await tokenService.validateRefreshToken(rawRefreshToken);
+
+      const user = await userRepository.findById(payload.sub);
+      if (!user || !user.isActive) {
+        throw new UnauthorizedError();
+      }
+
+      const tokens = await tokenService.rotateRefreshToken({
+        email: user.email,
+        meta,
+        oldJti: payload.jti,
+        userId: user.id,
+      });
+
+      logger.info({ userId: user.id }, "Token Refreshed");
+
+      return tokens;
+    },
+
+    async logout(rawRefreshToken: string): Promise<void> {
+      try {
+        const payload =
+          tokenService.verifyRefreshTokenSignature(rawRefreshToken);
+        await tokenService.revokeToken(payload.jti);
+        logger.info({ userId: payload.sub }, "User logged out");
+      } catch {
+        // If token is already invalid/expired, treat logout as success
+        logger.debug(
+          "Logout called with invalid/expired token — treating as success",
+        );
+      }
+    },
+
+    /**
+     * Get current user profile from access token.
+     */
+    async getMe(userId: string): Promise<PublicUser> {
+      const user = await userRepository.findById(userId);
+      if (!user) {
+        throw new NotFoundError("User");
+      }
+      return toPublicUser(user);
+    },
+  };
+
+  return service;
 };

@@ -3,8 +3,8 @@
 import { Request, Response, NextFunction } from "express";
 import { AccessTokenPayload } from "../auth.types";
 import { UnauthorizedError } from "src/shared/errors/app-error";
-import { tokenService } from "../services/token.service";
 import { logger } from "src/shared/logger";
+import { tokenService } from "../container";
 
 declare global {
   namespace Express {
