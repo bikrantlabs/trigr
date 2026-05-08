@@ -19,7 +19,7 @@ export const createUserRepository = (pool: Pool): UserRepository => {
         isActive: rows[0].is_active,
         isEmailVerified: rows[0].is_email_verified,
         passwordHash: rows[0].password_hash,
-        updatedAt: new Date(rows[0].password_hash),
+        updatedAt: new Date(rows[0].updated_at),
       };
     },
     async findById(id: string): Promise<User | null> {
@@ -37,7 +37,7 @@ export const createUserRepository = (pool: Pool): UserRepository => {
         isActive: rows[0].is_active,
         isEmailVerified: rows[0].is_email_verified,
         passwordHash: rows[0].password_hash,
-        updatedAt: new Date(rows[0].password_hash),
+        updatedAt: new Date(rows[0].updated_at),
       };
     },
     create: async (data: CreateUserData): Promise<User> => {
@@ -57,7 +57,7 @@ export const createUserRepository = (pool: Pool): UserRepository => {
         isActive: rows[0].is_active,
         isEmailVerified: rows[0].is_email_verified,
         passwordHash: rows[0].password_hash,
-        updatedAt: new Date(rows[0].password_hash),
+        updatedAt: new Date(rows[0].updated_at),
       };
     },
   };

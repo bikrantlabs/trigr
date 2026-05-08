@@ -1,9 +1,15 @@
 import { z } from "zod";
-import "dotenv/config";
+import dotenv from "dotenv";
+import path from "path";
+const envFile =
+  process.env.NODE_ENV === "TEST"
+    ? ".env.test"
+    : process.env.NODE_ENV === "DEV"
+      ? ".env.local"
+      : ".env";
+dotenv.config({ path: path.resolve(process.cwd(), envFile) });
 const envSchema = z.object({
-  NODE_ENV: z
-    .enum(["development", "test", "production"])
-    .default("development"),
+  NODE_ENV: z.enum(["TEST", "DEV", "PROD"]).default("DEV"),
   PORT: z.coerce.number().default(8000),
 
   // Database
@@ -43,7 +49,7 @@ const parsed = envSchema.safeParse(process.env);
 
 if (!parsed.success) {
   console.error("❌ Invalid environment variables:");
-  console.error(parsed.error.flatten().fieldErrors);
+  console.error(z.treeifyError(parsed.error));
   process.exit(1);
 }
 

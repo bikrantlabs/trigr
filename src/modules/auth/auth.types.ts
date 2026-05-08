@@ -20,18 +20,9 @@ export type RefreshToken = {
   userAgent: string | null;
   ipAddress: string | null;
 };
+// ─── Service input types are defined inside /validators ───────────────────────────────────────────────
 
-// ─── Service input/output types ───────────────────────────────────────────────
-
-export type RegisterInput = {
-  email: string;
-  password: string;
-};
-
-export type LoginInput = {
-  email: string;
-  password: string;
-};
+// ─── Service output types ───────────────────────────────────────────────
 
 export type TokenPair = {
   accessToken: string;
@@ -43,13 +34,6 @@ export type AuthResult = {
   tokens: TokenPair;
 };
 
-export type RefreshInput = {
-  refreshToken: string;
-};
-
-export type LogoutInput = {
-  refreshToken: string;
-};
 // ─── API Responses  ────────────────────────────────────────────────────────
 export type RegisterResponse = AuthResult;
 export type LoginResponse = AuthResult;

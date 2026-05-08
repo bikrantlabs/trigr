@@ -2,9 +2,7 @@ import { createLogger } from "src/shared/logger";
 import {
   AuthResult,
   UserRepository,
-  LoginInput,
   PublicUser,
-  RegisterInput,
   TokenPair,
   User,
   TokenService,
@@ -16,6 +14,7 @@ import {
   UnauthorizedError,
 } from "src/shared/errors/app-error";
 import { hashPassword, verifyPassword } from "../utils/hash-password";
+import { LoginBody, RegisterBody } from "../validators/auth.validator";
 
 const logger = createLogger("Auth Service");
 
@@ -38,7 +37,7 @@ export const createAuthService = (deps: {
 
   const service = {
     async register(
-      data: RegisterInput,
+      data: RegisterBody,
       meta: { ipAddress: string | null; userAgent: string | null },
     ): Promise<AuthResult> {
       const existing = await userRepository.findByEmail(data.email);
@@ -76,7 +75,7 @@ export const createAuthService = (deps: {
       };
     },
     async login(
-      data: LoginInput,
+      data: LoginBody,
       meta: { userAgent: string | null; ipAddress: string | null },
     ): Promise<AuthResult> {
       const { email, password } = data;
