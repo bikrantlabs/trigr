@@ -2,12 +2,8 @@ import { Request, Response } from "express";
 import { ApiResponse } from "src/shared/api-response";
 import {
   GetMeResponse,
-  LoginInput,
   LoginResponse,
-  LogoutInput,
-  RefreshInput,
   RefreshResponse,
-  RegisterInput,
   RegisterResponse,
 } from "./auth.types";
 import { getRequestMetadata } from "src/shared/utils/get-request-metadata";
@@ -15,13 +11,16 @@ import { UnauthorizedError } from "src/shared/errors/app-error";
 import { config } from "src/shared/config/config";
 import { parseExpiryToMs } from "src/shared/utils/date";
 import { authService } from "./container";
+import {
+  LoginBody,
+  LogoutBody,
+  RefreshBody,
+  RegisterBody,
+} from "./validators/auth.validator";
 
 export const authController = {
-  async register(
-    req: Request<object, object, RegisterInput>,
-    res: Response<ApiResponse<RegisterResponse>>,
-  ) {
-    const body = req.body;
+  async register(req: Request, res: Response<ApiResponse<RegisterResponse>>) {
+    const body = req.body as RegisterBody;
 
     const result = await authService.register(body, getRequestMetadata(req));
 
@@ -43,7 +42,7 @@ export const authController = {
     });
   },
   async login(req: Request, res: Response<ApiResponse<LoginResponse>>) {
-    const body = req.body as LoginInput;
+    const body = req.body as LoginBody;
 
     const result = await authService.login(body, getRequestMetadata(req));
 
@@ -66,7 +65,7 @@ export const authController = {
   },
   async refresh(req: Request, res: Response<ApiResponse<RefreshResponse>>) {
     // TODO: Grab refresh token automatically from Cookie
-    const { refreshToken } = req.body as RefreshInput;
+    const { refreshToken } = req.body as RefreshBody;
 
     const result = await authService.refresh(
       refreshToken,
@@ -85,7 +84,7 @@ export const authController = {
     req: Request,
     res: Response<ApiResponse<object>>,
   ): Promise<void> {
-    const { refreshToken } = req.body as LogoutInput;
+    const { refreshToken } = req.body as LogoutBody;
     await authService.logout(refreshToken);
 
     res.status(200).json({

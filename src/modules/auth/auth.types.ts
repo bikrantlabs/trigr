@@ -1,5 +1,7 @@
 // ─── Domain types ─────────────────────────────────────────────────────────────
 
+import { LoginBody, RegisterBody } from "./validators/auth.validator";
+
 export type User = {
   id: string;
   email: string;
@@ -20,18 +22,9 @@ export type RefreshToken = {
   userAgent: string | null;
   ipAddress: string | null;
 };
+// ─── Service input types are defined inside /validators ───────────────────────────────────────────────
 
-// ─── Service input/output types ───────────────────────────────────────────────
-
-export type RegisterInput = {
-  email: string;
-  password: string;
-};
-
-export type LoginInput = {
-  email: string;
-  password: string;
-};
+// ─── Service output types ───────────────────────────────────────────────
 
 export type TokenPair = {
   accessToken: string;
@@ -43,13 +36,6 @@ export type AuthResult = {
   tokens: TokenPair;
 };
 
-export type RefreshInput = {
-  refreshToken: string;
-};
-
-export type LogoutInput = {
-  refreshToken: string;
-};
 // ─── API Responses  ────────────────────────────────────────────────────────
 export type RegisterResponse = AuthResult;
 export type LoginResponse = AuthResult;
@@ -145,4 +131,25 @@ export type TokenService = {
   }): Promise<TokenPair>;
   revokeToken(jti: string): Promise<void>;
   revokeAllUserTokens(userId: string): Promise<void>;
+};
+
+export type AuthService = {
+  register(
+    data: RegisterBody,
+    meta: { ipAddress: string | null; userAgent: string | null },
+  ): Promise<AuthResult>;
+
+  login(
+    data: LoginBody,
+    meta: { userAgent: string | null; ipAddress: string | null },
+  ): Promise<AuthResult>;
+
+  refresh(
+    rawRefreshToken: string,
+    meta: { userAgent: string | null; ipAddress: string | null },
+  ): Promise<TokenPair>;
+
+  logout(rawRefreshToken: string): Promise<void>;
+
+  getMe(userId: string): Promise<PublicUser>;
 };
