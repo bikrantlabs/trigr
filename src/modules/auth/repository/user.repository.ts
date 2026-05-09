@@ -61,12 +61,12 @@ export const createUserRepository = (pool: Pool): UserRepository => {
       };
     },
     setEmailVerified: async (
-      userId: string,
+      email: string,
       verified: boolean,
     ): Promise<User> => {
       const { rows } = await pool.query<User>(
-        "UPDATE users SET is_email_verified = $1 WHERE id=$2 RETURNING *",
-        [verified, userId],
+        "UPDATE users SET is_email_verified = $1 WHERE email=$2 RETURNING *",
+        [verified, email],
       );
       return rows[0] as User;
     },

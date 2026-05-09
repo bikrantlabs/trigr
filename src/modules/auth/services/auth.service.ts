@@ -1,9 +1,7 @@
 import { createLogger } from "src/shared/logger";
 import {
-  AuthResult,
   UserRepository,
   PublicUser,
-  TokenPair,
   User,
   TokenService,
   Meta,
@@ -15,14 +13,16 @@ import {
   InvalidCredentialsError,
   NotFoundError,
   UnauthorizedError,
+  UserAlreadyVerifiedError,
   UserNotVerifiedError,
 } from "src/shared/errors/app-error";
 import { hashPassword, verifyPassword } from "../utils/hash-password";
-import { LoginBody, RegisterBody } from "../validators/auth.validator";
 import { cacheKeys, CacheService } from "src/shared/infra/cache.service";
 import { generateVerificationCode } from "../utils/verification-code";
 import { config } from "src/shared/config/config";
 import { authEvents } from "../events/auth.events";
+import { hashEmail } from "../utils/hash-email";
+import { RateLimitError } from "bullmq";
 
 const logger = createLogger("Auth Service");
 
@@ -62,17 +62,8 @@ export const createAuthService = (deps: {
       //
 
       const verificationCode = generateVerificationCode();
-      cacheService.set(
-        cacheKeys.emailVerification(user.id),
-        verificationCode,
-        config.VERIFICATION_CODE_EXPIRY_SECONDS,
-      );
 
-      authEvents.emit("user.registered", {
-        email: user.email,
-        userId: user.id,
-        code: verificationCode,
-      });
+      service.cacheCode(user.email, verificationCode);
 
       logger.info({ userId: user.id }, "User registered");
       return toPublicUser(user);
@@ -123,25 +114,34 @@ export const createAuthService = (deps: {
       };
     },
 
-    async verify(data: { userId: string; code: string }, meta: Meta) {
+    async verify(data: { email: string; code: string }, meta: Meta) {
       // Check
-      const { code, userId } = data;
+      const { code, email } = data;
+
+      // Get user from db
+      let user = await userRepository.findByEmail(email);
+
+      if (!user) {
+        throw new UnauthorizedError();
+      }
+
+      if (user.isEmailVerified) {
+        throw new UserAlreadyVerifiedError();
+      }
+
+      const emailHash = hashEmail(email);
 
       const _code = await cacheService.get<string>(
-        cacheKeys.emailVerification(userId),
+        cacheKeys.emailVerification(emailHash),
       );
 
       if (!_code || _code !== code) {
         logger.error("User verification failed!");
         throw new InvalidCodeError();
       }
-      // Get user from db
-      let user = await userRepository.findById(userId);
-      if (!user) {
-        throw new UnauthorizedError();
-      }
+
       // Update the email_verified to true
-      user = await userRepository.setEmailVerified(userId, true);
+      user = await userRepository.setEmailVerified(email, true);
 
       const accessToken = tokenService.generateAccessToken(user.id, user.email);
 
@@ -156,7 +156,8 @@ export const createAuthService = (deps: {
         meta,
       });
 
-      cacheService.delete(cacheKeys.emailVerification(userId));
+      // User verified, delete the key
+      cacheService.delete(cacheKeys.emailVerification(emailHash));
 
       logger.info("User Verified");
 
@@ -169,8 +170,17 @@ export const createAuthService = (deps: {
      * Refresh tokens
      */
 
-    async sendVerificationEmail(data) {
-      const { code, email } = data;
+    async sendVerificationEmail(email) {
+      const emailHash = hashEmail(email);
+
+      const key = await cacheService.get<string>(
+        cacheKeys.emailVerificationCooldown(emailHash),
+      );
+      if (key) {
+        throw new RateLimitError(
+          `Please wait ${config.EMAIL_VERIFICATION_COOLDOWN} seconds before requesting new code.`,
+        );
+      }
 
       const user = await userRepository.findByEmail(email);
 
@@ -178,13 +188,14 @@ export const createAuthService = (deps: {
         throw new UnauthorizedError();
       }
 
-      cacheService.set(
-        cacheKeys.emailVerification(user.id),
-        code,
-        config.VERIFICATION_CODE_EXPIRY_SECONDS,
-      );
+      if (user.isEmailVerified) {
+        throw new UserAlreadyVerifiedError();
+      }
 
-      // Trigger email
+      const verificationCode = generateVerificationCode();
+
+      await service.cacheCode(email, verificationCode);
+      logger.info("Verification code sent!");
     },
     async refresh(rawRefreshToken, meta) {
       const payload = await tokenService.validateRefreshToken(rawRefreshToken);
@@ -204,6 +215,27 @@ export const createAuthService = (deps: {
       logger.info({ userId: user.id }, "Token Refreshed");
 
       return tokens;
+    },
+
+    async cacheCode(email, code) {
+      const emailHash = hashEmail(email);
+      await cacheService.set(
+        cacheKeys.emailVerification(emailHash),
+        code,
+        config.VERIFICATION_CODE_EXPIRY_SECONDS,
+      );
+
+      // Cannot request another verification before 30 seconds
+      await cacheService.set(
+        cacheKeys.emailVerificationCooldown(emailHash),
+        1,
+        config.EMAIL_VERIFICATION_COOLDOWN,
+      );
+
+      authEvents.emit("user.verification_code", {
+        email,
+        code,
+      });
     },
 
     async logout(rawRefreshToken) {

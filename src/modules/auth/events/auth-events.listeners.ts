@@ -3,7 +3,7 @@ import { authEvents } from "./auth.events";
 
 export function registerAuthEventListener() {
   const authEmailQueue = getQueue("auth_email");
-  authEvents.on("user.registered", async (data) => {
+  authEvents.on("user.verification_code", async (data) => {
     // Add job to email queue.
     await authEmailQueue.add("send-verification-email", data, {
       attempts: 3,

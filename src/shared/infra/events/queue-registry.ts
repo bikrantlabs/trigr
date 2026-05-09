@@ -1,5 +1,5 @@
 export type QueueRegistry = {
-  "auth:email": {
+  auth_email: {
     "send-verification-email": {
       email: string;
       code: string;

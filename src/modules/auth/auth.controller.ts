@@ -16,6 +16,7 @@ import {
   LogoutBody,
   RefreshBody,
   RegisterBody,
+  SendVerificationEmailBody,
   VerifyBody,
 } from "./validators/auth.validator";
 
@@ -27,7 +28,7 @@ export const authController = {
 
     res.status(201).json({
       status: "success",
-      message: "User registered successfully. Please verify your email",
+      message: `Verification email sent! Expires in ${config.VERIFICATION_CODE_EXPIRY_SECONDS / 60} minutes`,
       timestamp: new Date(),
       data: {
         user: result,
@@ -51,9 +52,9 @@ export const authController = {
   },
 
   async verify(req: Request, res: Response<ApiResponse<LoginResponse>>) {
-    const { code, userId } = req.body as VerifyBody;
+    const { code, email } = req.body as VerifyBody;
     const result = await authService.verify(
-      { userId, code },
+      { email, code },
       getRequestMetadata(req),
     );
 
@@ -71,6 +72,16 @@ export const authController = {
         user: result.user,
         tokens: result.tokens,
       },
+    });
+  },
+  async sendVerificationEmail(req: Request, res: Response<ApiResponse<null>>) {
+    const { email } = req.body as SendVerificationEmailBody;
+    await authService.sendVerificationEmail(email);
+
+    res.status(200).json({
+      status: "success",
+      message: `Verification email sent! Expires in ${config.VERIFICATION_CODE_EXPIRY_SECONDS / 60} minutes`,
+      timestamp: new Date(),
     });
   },
   async refresh(req: Request, res: Response<ApiResponse<RefreshResponse>>) {

@@ -8,6 +8,7 @@ import {
   logoutSchema,
   refreshSchema,
   registerSchema,
+  sendVerificationEmailSchema,
   verifySchema,
 } from "./validators/auth.validator";
 
@@ -27,6 +28,11 @@ authRouter.post(
   "/verify-email",
   validate(verifySchema),
   asyncHandler(authController.verify),
+);
+authRouter.post(
+  "/send-verification-email",
+  validate(sendVerificationEmailSchema),
+  asyncHandler(authController.sendVerificationEmail),
 );
 authRouter.post(
   "/logout",

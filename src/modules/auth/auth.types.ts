@@ -75,7 +75,7 @@ export type UserRepository = {
   findById(id: string): Promise<User | null>;
   findByEmail(email: string): Promise<User | null>;
   create(data: CreateUserData): Promise<User>;
-  setEmailVerified(userId: string, verified: boolean): Promise<User>;
+  setEmailVerified(email: string, verified: boolean): Promise<User>;
   // updateById(id: string, data: Partial<User>): Promise<User>;
   // deleteById(id: string): Promise<void>;
 };
@@ -142,11 +142,12 @@ export type TokenService = {
 export type AuthService = {
   register(data: RegisterBody): Promise<PublicUser>;
   verify(
-    data: { userId: string; code: string },
+    data: { email: string; code: string },
     meta: Meta,
   ): Promise<AuthResult>;
   login(data: LoginBody, meta: Meta): Promise<AuthResult>;
-  sendVerificationEmail(data: { email: string; code: string }): Promise<void>;
+  cacheCode(email: string, code: string): Promise<void>;
+  sendVerificationEmail(email: string): Promise<void>;
 
   refresh(rawRefreshToken: string, meta: Meta): Promise<TokenPair>;
 

@@ -66,6 +66,12 @@ export class InvalidCodeError extends AppError {
   }
 }
 
+export class UserAlreadyVerifiedError extends AppError {
+  constructor() {
+    super("User has been already verified", 404, "USER_ALREADY_VERIFIED");
+  }
+}
+
 // ─── Resource errors ──────────────────────────────────────────────────────────
 
 export class NotFoundError extends AppError {
@@ -94,12 +100,8 @@ export class ValidationError extends AppError {
 // ─── Rate limiting ────────────────────────────────────────────────────────────
 
 export class RateLimitError extends AppError {
-  constructor() {
-    super(
-      "Too many requests, please try again later",
-      429,
-      "RATE_LIMIT_EXCEEDED",
-    );
+  constructor(message = "Too many requests, please try again later") {
+    super(message, 429, "RATE_LIMIT_EXCEEDED");
   }
 }
 

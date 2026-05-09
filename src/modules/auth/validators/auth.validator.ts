@@ -28,8 +28,14 @@ export const registerSchema = z.object({
 
 export const verifySchema = z.object({
   body: z.object({
-    userId: z.string(),
+    email: emailSchema,
     code: z.string().length(6),
+  }),
+});
+
+export const sendVerificationEmailSchema = z.object({
+  body: z.object({
+    email: emailSchema,
   }),
 });
 
@@ -57,6 +63,9 @@ export const logoutSchema = z.object({
 
 export type RegisterBody = z.infer<typeof registerSchema>["body"];
 export type VerifyBody = z.infer<typeof verifySchema>["body"];
+export type SendVerificationEmailBody = z.infer<
+  typeof sendVerificationEmailSchema
+>["body"];
 export type LoginBody = z.infer<typeof loginSchema>["body"];
 export type RefreshBody = z.infer<typeof refreshSchema>["body"];
 export type LogoutBody = z.infer<typeof logoutSchema>["body"];

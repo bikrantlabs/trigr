@@ -33,6 +33,7 @@ const envSchema = z.object({
 
   // Verification code
   VERIFICATION_CODE_EXPIRY_SECONDS: z.coerce.number().default(5 * 60), // 5 Minutes
+  EMAIL_VERIFICATION_COOLDOWN: z.coerce.number().default(30), // 60 seconds
 
   // Bcrypt
   BCRYPT_ROUNDS: z.coerce.number().default(12),

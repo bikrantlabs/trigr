@@ -96,5 +96,7 @@ export const cacheService: CacheService = {
 
 export const cacheKeys = {
   // Verify email after register
-  emailVerification: (userId: string) => `auth:email_verify:${userId}`,
+  emailVerification: (emailHash: string) => `auth:email_verify:${emailHash}`,
+  emailVerificationCooldown: (emailHash: string) =>
+    `auth:email_verify_cooldown:${emailHash}`,
 };

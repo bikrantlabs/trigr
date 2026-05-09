@@ -1,7 +1,7 @@
 import { TypedEventEmitter } from "src/shared/infra/events/event-emitter";
 
 export type AuthEventMap = {
-  "user.registered": [{ userId: string; email: string; code: string }];
+  "user.verification_code": [{ email: string; code: string }];
   "user.logged_in": [
     { userId: string; email: string; ipAddress: string | null },
   ];
