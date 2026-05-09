@@ -22,6 +22,7 @@ import { LoginBody, RegisterBody } from "../validators/auth.validator";
 import { cacheKeys, CacheService } from "src/shared/infra/cache.service";
 import { generateVerificationCode } from "../utils/verification-code";
 import { config } from "src/shared/config/config";
+import { authEvents } from "../events/auth.events";
 
 const logger = createLogger("Auth Service");
 
@@ -66,10 +67,14 @@ export const createAuthService = (deps: {
         verificationCode,
         config.VERIFICATION_CODE_EXPIRY_SECONDS,
       );
-      // TODO: TRIGGER EMAIL.
+
+      authEvents.emit("user.registered", {
+        email: user.email,
+        userId: user.id,
+        code: verificationCode,
+      });
 
       logger.info({ userId: user.id }, "User registered");
-
       return toPublicUser(user);
     },
     async login(data, meta) {

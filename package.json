@@ -62,6 +62,7 @@
   "packageManager": "yarn@4.2.2",
   "dependencies": {
     "bcryptjs": "^3.0.3",
+    "bullmq": "^5.76.6",
     "cors": "^2.8.6",
     "express": "^5.2.1",
     "helmet": "^8.1.0",

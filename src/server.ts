@@ -1,7 +1,10 @@
 import { createApp } from "./app";
+import { registerAuthEventListener } from "./modules/auth/events/auth-events.listeners";
 import { config } from "./shared/config/config";
 import { connectRedis } from "./shared/infra/cache";
 import { connectDB } from "./shared/infra/db";
+import { initQueues } from "./shared/infra/events/queue";
+import { startAllWorkers } from "./shared/infra/events/worker";
 import { logger } from "./shared/logger";
 
 async function start() {
@@ -11,8 +14,10 @@ async function start() {
     );
     await connectDB();
     await connectRedis();
-    // TODO: Initialize Background Job Listener
-    // TODO: Start Workers
+
+    initQueues();
+    startAllWorkers();
+    registerAuthEventListener();
 
     const app = createApp();
 
@@ -63,6 +68,7 @@ async function start() {
       process.exit(1);
     });
   } catch (error) {
+    console.log(error);
     logger.fatal({ error }, "Failed to start server");
     process.exit(1);
   }

@@ -1,0 +1,13 @@
+import { getQueue } from "src/shared/infra/events/queue";
+import { authEvents } from "./auth.events";
+
+export function registerAuthEventListener() {
+  const authEmailQueue = getQueue("auth_email");
+  authEvents.on("user.registered", async (data) => {
+    // Add job to email queue.
+    await authEmailQueue.add("send-verification-email", data, {
+      attempts: 3,
+      backoff: { type: "exponential", delay: 2000 },
+    });
+  });
+}
