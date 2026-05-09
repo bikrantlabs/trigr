@@ -2989,6 +2989,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/nodemailer@npm:^8.0.0":
+  version: 8.0.0
+  resolution: "@types/nodemailer@npm:8.0.0"
+  dependencies:
+    "@types/node": "npm:*"
+  checksum: 10/d1178b557e8c547018e708459af06fdf2e9cfd6d65fed109517cddfe6b5add6201d941882a2e4eeede529de08ae71a68fb2a1d8f1c41cb3761d3a6c2458025fe
+  languageName: node
+  linkType: hard
+
 "@types/pg@npm:^8.20.0":
   version: 8.20.0
   resolution: "@types/pg@npm:8.20.0"
@@ -6523,6 +6532,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"nodemailer@npm:^8.0.7":
+  version: 8.0.7
+  resolution: "nodemailer@npm:8.0.7"
+  checksum: 10/f0afea43af7f7deb55913811362b5d255e9d70c87024eb8b5161acd8a3a3c765454a52eefbfe40a5fe79ff0475b5445acafd20cb187826222b895dee15470c8f
+  languageName: node
+  linkType: hard
+
 "nodemon@npm:3.1.14":
   version: 3.1.14
   resolution: "nodemon@npm:3.1.14"
@@ -7993,6 +8009,7 @@ __metadata:
     "@types/express": "npm:^5.0.6"
     "@types/jsonwebtoken": "npm:^9"
     "@types/node": "npm:^25.6.0"
+    "@types/nodemailer": "npm:^8.0.0"
     "@types/pg": "npm:^8.20.0"
     "@types/supertest": "npm:^7"
     "@typescript-eslint/eslint-plugin": "npm:6.21.0"
@@ -8010,6 +8027,7 @@ __metadata:
     helmet: "npm:^8.1.0"
     jsonwebtoken: "npm:^9.0.3"
     node-pg-migrate: "npm:^8.0.4"
+    nodemailer: "npm:^8.0.7"
     nodemon: "npm:3.1.14"
     pg: "npm:^8.20.0"
     pino: "npm:^10.3.1"
