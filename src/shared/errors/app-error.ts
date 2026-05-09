@@ -36,6 +36,11 @@ export class InvalidCredentialsError extends AppError {
     super("Invalid email or password", 401, "INVALID_CREDENTIALS");
   }
 }
+export class UserNotVerifiedError extends AppError {
+  constructor() {
+    super("User not verified.", 401, "UNVERIFIED_USER");
+  }
+}
 
 export class TokenExpiredError extends AppError {
   constructor() {
@@ -52,6 +57,12 @@ export class InvalidTokenError extends AppError {
 export class TokenRevokedError extends AppError {
   constructor() {
     super("Token has been revoked", 401, "TOKEN_REVOKED");
+  }
+}
+// ─── Verification Code Error ──────────────────────────────────────────────────────────
+export class InvalidCodeError extends AppError {
+  constructor() {
+    super("Invalid verification code", 404, "INVALID_CODE");
   }
 }
 

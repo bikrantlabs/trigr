@@ -22,6 +22,11 @@ export type RefreshToken = {
   userAgent: string | null;
   ipAddress: string | null;
 };
+
+export type Meta = {
+  userAgent: string | null;
+  ipAddress: string | null;
+};
 // ─── Service input types are defined inside /validators ───────────────────────────────────────────────
 
 // ─── Service output types ───────────────────────────────────────────────
@@ -37,7 +42,7 @@ export type AuthResult = {
 };
 
 // ─── API Responses  ────────────────────────────────────────────────────────
-export type RegisterResponse = AuthResult;
+export type RegisterResponse = Omit<AuthResult, "tokens">;
 export type LoginResponse = AuthResult;
 export type RefreshResponse = TokenPair;
 export type GetMeResponse = { user: PublicUser };
@@ -70,6 +75,7 @@ export type UserRepository = {
   findById(id: string): Promise<User | null>;
   findByEmail(email: string): Promise<User | null>;
   create(data: CreateUserData): Promise<User>;
+  setEmailVerified(userId: string, verified: boolean): Promise<User>;
   // updateById(id: string, data: Partial<User>): Promise<User>;
   // deleteById(id: string): Promise<void>;
 };
@@ -120,34 +126,29 @@ export type TokenService = {
     jti: string;
     userId: string;
     rawToken: string;
-    meta: { ipAddress: string | null; userAgent: string | null };
+    meta: Meta;
   }): Promise<void>;
   validateRefreshToken(rawToken: string): Promise<RefreshTokenPayload>;
   rotateRefreshToken(data: {
     oldJti: string;
     userId: string;
     email: string;
-    meta: { userAgent: string | null; ipAddress: string | null };
+    meta: Meta;
   }): Promise<TokenPair>;
   revokeToken(jti: string): Promise<void>;
   revokeAllUserTokens(userId: string): Promise<void>;
 };
 
 export type AuthService = {
-  register(
-    data: RegisterBody,
-    meta: { ipAddress: string | null; userAgent: string | null },
+  register(data: RegisterBody): Promise<PublicUser>;
+  verify(
+    data: { userId: string; code: string },
+    meta: Meta,
   ): Promise<AuthResult>;
+  login(data: LoginBody, meta: Meta): Promise<AuthResult>;
+  sendVerificationEmail(data: { email: string; code: string }): Promise<void>;
 
-  login(
-    data: LoginBody,
-    meta: { userAgent: string | null; ipAddress: string | null },
-  ): Promise<AuthResult>;
-
-  refresh(
-    rawRefreshToken: string,
-    meta: { userAgent: string | null; ipAddress: string | null },
-  ): Promise<TokenPair>;
+  refresh(rawRefreshToken: string, meta: Meta): Promise<TokenPair>;
 
   logout(rawRefreshToken: string): Promise<void>;
 

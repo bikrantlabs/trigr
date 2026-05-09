@@ -16,28 +16,21 @@ import {
   LogoutBody,
   RefreshBody,
   RegisterBody,
+  VerifyBody,
 } from "./validators/auth.validator";
 
 export const authController = {
   async register(req: Request, res: Response<ApiResponse<RegisterResponse>>) {
     const body = req.body as RegisterBody;
 
-    const result = await authService.register(body, getRequestMetadata(req));
-
-    res.cookie(config.REFRESH_TOKEN_COOKIE_KEY, result.tokens.refreshToken, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "strict",
-      maxAge: parseExpiryToMs(config.REFRESH_TOKEN_EXPIRY),
-    });
+    const result = await authService.register(body);
 
     res.status(201).json({
       status: "success",
-      message: "User registered successfully",
+      message: "User registered successfully. Please verify your email",
       timestamp: new Date(),
       data: {
-        user: result.user,
-        tokens: result.tokens,
+        user: result,
       },
     });
   },
@@ -46,16 +39,33 @@ export const authController = {
 
     const result = await authService.login(body, getRequestMetadata(req));
 
+    res.status(200).json({
+      status: "success",
+      message: "User logged in successfully",
+      timestamp: new Date(),
+      data: {
+        user: result.user,
+        tokens: result.tokens,
+      },
+    });
+  },
+
+  async verify(req: Request, res: Response<ApiResponse<LoginResponse>>) {
+    const { code, userId } = req.body as VerifyBody;
+    const result = await authService.verify(
+      { userId, code },
+      getRequestMetadata(req),
+    );
+
     res.cookie(config.REFRESH_TOKEN_COOKIE_KEY, result.tokens.refreshToken, {
       httpOnly: true,
       secure: true,
       sameSite: "strict",
       maxAge: parseExpiryToMs(config.REFRESH_TOKEN_EXPIRY),
     });
-
     res.status(200).json({
       status: "success",
-      message: "User logged in successfully",
+      message: "User verified successfully",
       timestamp: new Date(),
       data: {
         user: result.user,

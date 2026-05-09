@@ -6,16 +6,22 @@ import {
   TokenPair,
   User,
   TokenService,
+  Meta,
   AuthService,
 } from "../auth.types";
 import {
   ConflictError,
+  InvalidCodeError,
   InvalidCredentialsError,
   NotFoundError,
   UnauthorizedError,
+  UserNotVerifiedError,
 } from "src/shared/errors/app-error";
 import { hashPassword, verifyPassword } from "../utils/hash-password";
 import { LoginBody, RegisterBody } from "../validators/auth.validator";
+import { cacheKeys, CacheService } from "src/shared/infra/cache.service";
+import { generateVerificationCode } from "../utils/verification-code";
+import { config } from "src/shared/config/config";
 
 const logger = createLogger("Auth Service");
 
@@ -33,14 +39,12 @@ function toPublicUser(user: User): PublicUser {
 export const createAuthService = (deps: {
   userRepository: UserRepository;
   tokenService: TokenService;
+  cacheService: CacheService;
 }): AuthService => {
-  const { userRepository, tokenService } = deps;
+  const { userRepository, tokenService, cacheService } = deps;
 
   const service: AuthService = {
-    async register(
-      data: RegisterBody,
-      meta: { ipAddress: string | null; userAgent: string | null },
-    ): Promise<AuthResult> {
+    async register(data) {
       const existing = await userRepository.findByEmail(data.email);
       if (existing) {
         throw new ConflictError("An account with this email already exists.");
@@ -54,31 +58,21 @@ export const createAuthService = (deps: {
         passwordHash,
       });
 
-      // Generate tokens
-      const accessToken = tokenService.generateAccessToken(user.id, user.email);
+      //
 
-      const { token: refreshToken, jti } = tokenService.generateRefreshToken(
-        user.id,
+      const verificationCode = generateVerificationCode();
+      cacheService.set(
+        cacheKeys.emailVerification(user.id),
+        verificationCode,
+        config.VERIFICATION_CODE_EXPIRY_SECONDS,
       );
-
-      await tokenService.persistRefreshToken({
-        jti,
-        rawToken: refreshToken,
-        userId: user.id,
-        meta,
-      });
+      // TODO: TRIGGER EMAIL.
 
       logger.info({ userId: user.id }, "User registered");
 
-      return {
-        user: toPublicUser(user),
-        tokens: { accessToken, refreshToken },
-      };
+      return toPublicUser(user);
     },
-    async login(
-      data: LoginBody,
-      meta: { userAgent: string | null; ipAddress: string | null },
-    ): Promise<AuthResult> {
+    async login(data, meta) {
       const { email, password } = data;
       const user = await userRepository.findByEmail(email);
 
@@ -94,9 +88,12 @@ export const createAuthService = (deps: {
       if (!user || !match) {
         throw new InvalidCredentialsError();
       }
-
       if (!user.isActive) {
         throw new InvalidCredentialsError();
+      }
+
+      if (!user.isEmailVerified) {
+        throw new UserNotVerifiedError();
       }
 
       // Generate tokens:
@@ -121,13 +118,70 @@ export const createAuthService = (deps: {
       };
     },
 
+    async verify(data: { userId: string; code: string }, meta: Meta) {
+      // Check
+      const { code, userId } = data;
+
+      const _code = await cacheService.get<string>(
+        cacheKeys.emailVerification(userId),
+      );
+
+      if (!_code || _code !== code) {
+        logger.error("User verification failed!");
+        throw new InvalidCodeError();
+      }
+      // Get user from db
+      let user = await userRepository.findById(userId);
+      if (!user) {
+        throw new UnauthorizedError();
+      }
+      // Update the email_verified to true
+      user = await userRepository.setEmailVerified(userId, true);
+
+      const accessToken = tokenService.generateAccessToken(user.id, user.email);
+
+      const { token: refreshToken, jti } = tokenService.generateRefreshToken(
+        user.id,
+      );
+
+      await tokenService.persistRefreshToken({
+        jti,
+        rawToken: refreshToken,
+        userId: user.id,
+        meta,
+      });
+
+      cacheService.delete(cacheKeys.emailVerification(userId));
+
+      logger.info("User Verified");
+
+      return {
+        user: toPublicUser(user),
+        tokens: { accessToken, refreshToken },
+      };
+    },
     /**
      * Refresh tokens
      */
-    async refresh(
-      rawRefreshToken: string,
-      meta: { userAgent: string | null; ipAddress: string | null },
-    ): Promise<TokenPair> {
+
+    async sendVerificationEmail(data) {
+      const { code, email } = data;
+
+      const user = await userRepository.findByEmail(email);
+
+      if (!user) {
+        throw new UnauthorizedError();
+      }
+
+      cacheService.set(
+        cacheKeys.emailVerification(user.id),
+        code,
+        config.VERIFICATION_CODE_EXPIRY_SECONDS,
+      );
+
+      // Trigger email
+    },
+    async refresh(rawRefreshToken, meta) {
       const payload = await tokenService.validateRefreshToken(rawRefreshToken);
 
       const user = await userRepository.findById(payload.sub);
@@ -147,7 +201,7 @@ export const createAuthService = (deps: {
       return tokens;
     },
 
-    async logout(rawRefreshToken: string): Promise<void> {
+    async logout(rawRefreshToken) {
       try {
         const payload =
           tokenService.verifyRefreshTokenSignature(rawRefreshToken);
@@ -164,7 +218,7 @@ export const createAuthService = (deps: {
     /**
      * Get current user profile from access token.
      */
-    async getMe(userId: string): Promise<PublicUser> {
+    async getMe(userId) {
       const user = await userRepository.findById(userId);
       if (!user) {
         throw new NotFoundError("User");

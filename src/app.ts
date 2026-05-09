@@ -7,7 +7,6 @@ import { authRouter } from "./modules/auth/auth.router";
 import { errorHandler } from "./shared/errors/error-handler";
 
 export function createApp() {
-  logger.info("Creating App...");
   const app = express();
 
   // Security Headers
@@ -36,6 +35,7 @@ export function createApp() {
   app.use(
     `${config.API_PREFIX}/`,
     Router().get("/health", (_req, res) => {
+      console.log(config.NODE_ENV);
       logger.info("Health Check");
       res.json({ status: "ok", timestamp: new Date().toISOString() });
     }),

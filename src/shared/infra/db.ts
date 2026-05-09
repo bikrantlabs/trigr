@@ -1,5 +1,5 @@
 import { Pool } from "pg";
-import { logger } from "./logger";
+import { logger } from "../logger";
 
 let pool: Pool | null = null;
 

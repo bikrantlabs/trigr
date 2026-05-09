@@ -1,13 +1,16 @@
 import { createApp } from "./app";
 import { config } from "./shared/config/config";
-import { connectDB } from "./shared/db";
+import { connectRedis } from "./shared/infra/cache";
+import { connectDB } from "./shared/infra/db";
 import { logger } from "./shared/logger";
 
 async function start() {
-  logger.info("Starting Server...");
   try {
+    console.error(
+      "===== FRESH CODE RUNNING at " + new Date().toISOString() + " =====",
+    );
     await connectDB();
-    // TODO: Connect Redis
+    await connectRedis();
     // TODO: Initialize Background Job Listener
     // TODO: Start Workers
 
@@ -15,6 +18,7 @@ async function start() {
 
     const server = app.listen(config.PORT, () => {
       logger.info({ port: config.PORT }, "Server started");
+      console.log("SERVER REALLY STARTED");
     });
 
     async function shutdown(signal: string) {

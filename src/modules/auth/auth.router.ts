@@ -8,6 +8,7 @@ import {
   logoutSchema,
   refreshSchema,
   registerSchema,
+  verifySchema,
 } from "./validators/auth.validator";
 
 const authRouter = Router();
@@ -21,6 +22,11 @@ authRouter.post(
   "/login",
   validate(loginSchema),
   asyncHandler(authController.login),
+);
+authRouter.post(
+  "/verify-email",
+  validate(verifySchema),
+  asyncHandler(authController.verify),
 );
 authRouter.post(
   "/logout",

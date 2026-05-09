@@ -1,15 +1,10 @@
 import { z } from "zod";
-import dotenv from "dotenv";
-import path from "path";
-const envFile =
-  process.env.NODE_ENV === "TEST"
-    ? ".env.test"
-    : process.env.NODE_ENV === "DEV"
-      ? ".env.local"
-      : ".env";
-dotenv.config({ path: path.resolve(process.cwd(), envFile) });
+
+import "dotenv/config";
 const envSchema = z.object({
-  NODE_ENV: z.enum(["TEST", "DEV", "PROD"]).default("DEV"),
+  NODE_ENV: z
+    .enum(["test", "development", "production"])
+    .default("development"),
   PORT: z.coerce.number().default(8000),
 
   // Database
@@ -35,6 +30,9 @@ const envSchema = z.object({
   RATE_LIMIT_MAX_REQUESTS: z.coerce.number().default(100),
   LOGIN_RATE_LIMIT_MAX: z.coerce.number().default(10), // stricter for login
   REGISTER_RATE_LIMIT_MAX: z.coerce.number().default(5),
+
+  // Verification code
+  VERIFICATION_CODE_EXPIRY_SECONDS: z.coerce.number().default(5 * 60), // 5 Minutes
 
   // Bcrypt
   BCRYPT_ROUNDS: z.coerce.number().default(12),
