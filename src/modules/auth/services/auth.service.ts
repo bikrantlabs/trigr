@@ -159,6 +159,7 @@ export const createAuthService = (deps: {
       // User verified, delete the key
       cacheService.delete(cacheKeys.emailVerification(emailHash));
 
+      authEvents.emit("user.verified", { email: user.email });
       logger.info("User Verified");
 
       return {

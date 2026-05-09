@@ -7,7 +7,7 @@ export type AuthEventMap = {
   ];
   "user.logged_out": [{ userId: string }];
   "user.token_refreshed": [{ userId: string }];
-  "user.verified": [{ userId: string; email: string; code: string }];
+  "user.verified": [{ email: string }];
 };
 
 export const authEvents = new TypedEventEmitter<AuthEventMap>();
